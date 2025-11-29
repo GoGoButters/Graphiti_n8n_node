@@ -1,7 +1,7 @@
-# n8n-nodes-graphiti-memory
+# n8n-nodes-graphiti
 
 ![Graphiti Memory Node](https://img.shields.io/badge/n8n-community--node-00D4AA)
-![npm version](https://img.shields.io/npm/v/n8n-nodes-graphiti-memory)
+![npm version](https://img.shields.io/npm/v/n8n-nodes-graphiti)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 > Graphiti temporal knowledge graph memory integration for n8n AI agents
@@ -33,14 +33,14 @@ This community node integrates [Graphiti](https://github.com/getzep/graphiti) te
 1. Open your n8n instance
 2. Go to **Settings** → **Community Nodes**
 3. Click **Install**
-4. Enter: `n8n-nodes-graphiti-memory`
+4. Enter: `n8n-nodes-graphiti`
 5. Click **Install**
 6. Restart n8n
 
 ### Manual Installation
 
 ```bash
-npm install n8n-nodes-graphiti-memory
+npm install n8n-nodes-graphiti
 ```
 
 ## Configuration
@@ -162,7 +162,7 @@ npm run build
 # Link for local n8n development
 npm link
 cd ~/.n8n/nodes
-npm link n8n-nodes-graphiti-memory
+npm link n8n-nodes-graphiti
 ```
 
 ### Scripts
@@ -210,7 +210,7 @@ MIT © [GoGoButters](https://github.com/GoGoButters)
 ## Links
 
 - [GitHub Repository](https://github.com/GoGoButters/Graphiti_n8n_node)
-- [npm Package](https://www.npmjs.com/package/n8n-nodes-graphiti-memory)
+- [npm Package](https://www.npmjs.com/package/n8n-nodes-graphiti)
 - [Graphiti Project](https://github.com/getzep/graphiti)
 - [n8n Community Nodes](https://docs.n8n.io/integrations/community-nodes/)
 

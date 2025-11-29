@@ -1,5 +1,5 @@
 {
-  "name": "n8n-nodes-graphiti-memory",
+  "name": "n8n-nodes-graphiti",
   "version": "1.0.0",
   "description": "Graphiti temporal knowledge graph memory for n8n AI agents",
   "keywords": [
