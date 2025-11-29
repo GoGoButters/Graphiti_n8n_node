@@ -1,9 +1,8 @@
 import {
-    IExecuteFunctions,
-    INodeExecutionData,
+    ISupplyDataFunctions,
     INodeType,
     INodeTypeDescription,
-    IDataObject,
+    SupplyData,
 } from 'n8n-workflow';
 import { v4 as uuidv4 } from 'uuid';
 import { GraphitiChatMemory } from './GraphitiChatMemory';
@@ -19,8 +18,22 @@ export class GraphitiMemory implements INodeType {
         defaults: {
             name: 'Graphiti Memory',
         },
-        inputs: ['main'],
-        outputs: ['main'],
+        codex: {
+            categories: ['AI'],
+            subcategories: {
+                AI: ['Memory'],
+            },
+            resources: {
+                primaryDocumentation: [
+                    {
+                        url: 'https://github.com/GoGoButters/Graphiti_n8n_node',
+                    },
+                ],
+            },
+        },
+        inputs: [],
+        outputs: ['ai_memory'],
+        outputNames: ['Memory'],
         credentials: [
             {
                 name: 'graphitiApi',
@@ -70,93 +83,38 @@ export class GraphitiMemory implements INodeType {
         ],
     };
 
-    async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-        const items = this.getInputData();
-        const returnData: INodeExecutionData[] = [];
-
+    async supplyData(this: ISupplyDataFunctions, itemIndex: number): Promise<SupplyData> {
         // Get credentials
         const credentials = await this.getCredentials('graphitiApi');
         const apiUrl = credentials.apiUrl as string;
         const apiKey = credentials.apiKey as string;
 
-        for (let i = 0; i < items.length; i++) {
-            try {
-                // Get parameters
-                const sessionKeyExpression = this.getNodeParameter('sessionKey', i, '') as string;
-                const contextWindowLength = this.getNodeParameter('contextWindowLength', i, 5) as number;
-                const memoryKey = this.getNodeParameter('memoryKey', i, 'chat_history') as string;
-                const searchLimit = this.getNodeParameter('searchLimit', i, 10) as number;
+        // Get parameters
+        const sessionKeyExpression = this.getNodeParameter('sessionKey', itemIndex, '') as string;
+        const contextWindowLength = this.getNodeParameter('contextWindowLength', itemIndex, 5) as number;
+        const memoryKey = this.getNodeParameter('memoryKey', itemIndex, 'chat_history') as string;
+        const searchLimit = this.getNodeParameter('searchLimit', itemIndex, 10) as number;
 
-                // Extract session/user ID
-                let userId = sessionKeyExpression;
+        // Extract session/user ID
+        let userId = sessionKeyExpression;
 
-                // If sessionKey is empty or undefined, generate UUID
-                if (!userId || userId.trim() === '') {
-                    userId = uuidv4();
-                }
-
-                // Initialize memory instance
-                const memory = new GraphitiChatMemory({
-                    apiUrl,
-                    apiKey,
-                    userId,
-                    contextWindowLength,
-                    searchLimit,
-                    memoryKey,
-                });
-
-                // Get input data
-                const inputData = items[i].json;
-                const userInput = inputData.input || inputData.question || inputData.message || '';
-                const aiResponse = inputData.response || inputData.output || inputData.answer || '';
-
-                let resultData: IDataObject = { ...inputData };
-
-                // If this is a query (we have input but no response yet), load memory
-                if (userInput && !aiResponse) {
-                    const memoryVariables = await memory.loadMemoryVariables({ input: userInput });
-                    resultData = {
-                        ...inputData,
-                        memory: memoryVariables,
-                        [memoryKey]: memoryVariables[memoryKey],
-                    };
-                }
-
-                // If we have both input and response, save context
-                if (userInput && aiResponse) {
-                    await memory.saveContext(
-                        { input: userInput },
-                        { response: aiResponse }
-                    );
-                    resultData = {
-                        ...inputData,
-                        memorySaved: true,
-                    };
-                }
-
-                // Add session ID to output
-                resultData.sessionId = userId;
-
-                returnData.push({
-                    json: resultData,
-                    pairedItem: i,
-                });
-            } catch (error) {
-                // On error, pass through input data with error info
-                if (this.continueOnFail()) {
-                    returnData.push({
-                        json: {
-                            ...items[i].json,
-                            error: error instanceof Error ? error.message : 'Unknown error',
-                        },
-                        pairedItem: i,
-                    });
-                    continue;
-                }
-                throw error;
-            }
+        // If sessionKey is empty or undefined, generate UUID
+        if (!userId || userId.trim() === '') {
+            userId = uuidv4();
         }
 
-        return [returnData];
+        // Initialize memory instance
+        const memory = new GraphitiChatMemory({
+            apiUrl,
+            apiKey,
+            userId,
+            contextWindowLength,
+            searchLimit,
+            memoryKey,
+        });
+
+        return {
+            response: memory,
+        };
     }
 }

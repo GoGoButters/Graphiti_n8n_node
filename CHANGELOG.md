@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2025-11-29
+
+### Changed
+- **BREAKING**: Refactored node to AI Memory type
+- Changed from `execute` to `supplyData` method
+- Changed connection type from `main` to `ai_memory`
+- Node now connects directly to AI Agent's memory port (top connection)
+- Removed standard inputs/outputs (left/right connections)
+
+### Fixed
+- Added missing ESLint configuration files
+- Added `.eslintignore` to exclude build artifacts from linting
+- Installed missing `@typescript-eslint/eslint-plugin` dependency
+
 ## [1.0.0] - 2025-11-29
 
 ### Added
