@@ -83,6 +83,7 @@ export class GraphitiChatMemory extends BaseChatMemory {
     async loadMemoryVariables(values: InputValues): Promise<MemoryVariables> {
         try {
             const userInput = values[this.inputKey || 'input'] || '';
+            console.log(`[Graphiti] Loading memory for user: ${this.userId}, input: ${userInput}`);
             const longTermFacts: string[] = [];
 
             // Query Graphiti for relevant long-term facts
@@ -107,7 +108,7 @@ export class GraphitiChatMemory extends BaseChatMemory {
                         });
                     }
                 } catch (error) {
-                    console.error('Error querying Graphiti memory:', error);
+                    console.error('[Graphiti] Error querying Graphiti memory:', error);
                     // Continue with empty long-term facts on error
                 }
             }
@@ -140,7 +141,7 @@ export class GraphitiChatMemory extends BaseChatMemory {
                 [this.memoryKey]: memoryContent || 'No previous conversation history.',
             };
         } catch (error) {
-            console.error('Error loading memory variables:', error);
+            console.error('[Graphiti] Error loading memory variables:', error);
             // Return empty memory on error
             return {
                 [this.memoryKey]: 'No previous conversation history.',
@@ -159,6 +160,8 @@ export class GraphitiChatMemory extends BaseChatMemory {
             // Extract messages
             const userInput = inputValues[this.inputKey || 'input'] || '';
             const aiResponse = outputValues[this.outputKey || 'output'] || '';
+
+            console.log(`[Graphiti] Saving context for user: ${this.userId}`);
 
             // Save to Graphiti long-term storage
             const timestamp = new Date().toISOString();
@@ -179,7 +182,7 @@ export class GraphitiChatMemory extends BaseChatMemory {
 
                     await this.apiClient.post('/memory/append', userRequest);
                 } catch (error) {
-                    console.error('Error saving user message to Graphiti:', error);
+                    console.error('[Graphiti] Error saving user message to Graphiti:', error);
                 }
             }
 
@@ -199,11 +202,11 @@ export class GraphitiChatMemory extends BaseChatMemory {
 
                     await this.apiClient.post('/memory/append', aiRequest);
                 } catch (error) {
-                    console.error('Error saving AI message to Graphiti:', error);
+                    console.error('[Graphiti] Error saving AI message to Graphiti:', error);
                 }
             }
         } catch (error) {
-            console.error('Error saving context:', error);
+            console.error('[Graphiti] Error saving context:', error);
             // Don't throw - allow workflow to continue even if memory save fails
         }
     }

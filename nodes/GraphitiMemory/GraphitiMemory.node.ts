@@ -137,6 +137,16 @@ export class GraphitiMemory implements INodeType {
 
         return {
             response: memory,
-        };
+            executionData: [
+                {
+                    json: {
+                        sessionId,
+                        contextWindowLength,
+                        searchLimit,
+                        message: 'Graphiti Memory Initialized',
+                    },
+                },
+            ],
+        } as any;
     }
 }
