@@ -1,0 +1,63 @@
+{
+  "name": "n8n-nodes-graphiti-memory",
+  "version": "1.0.0",
+  "description": "Graphiti temporal knowledge graph memory for n8n AI agents",
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "langchain",
+    "memory",
+    "graphiti",
+    "knowledge-graph",
+    "ai",
+    "llm"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/GoGoButters/Graphiti_n8n_node#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GoGoButters/Graphiti_n8n_node.git"
+  },
+  "bugs": {
+    "url": "https://github.com/GoGoButters/Graphiti_n8n_node/issues"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc && gulp build:icons",
+    "dev": "tsc --watch",
+    "format": "prettier --write \"**/*.ts\"",
+    "lint": "eslint . --ext .ts",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/GraphitiApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/GraphitiMemory/GraphitiMemory.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.54.0",
+    "eslint-plugin-n8n-nodes-base": "^1.16.1",
+    "gulp": "^4.0.2",
+    "n8n-workflow": "^1.0.0",
+    "prettier": "^3.1.0",
+    "typescript": "^5.3.2"
+  },
+  "dependencies": {
+    "@langchain/community": "^0.0.20",
+    "@langchain/core": "^0.1.5",
+    "axios": "^1.6.2",
+    "uuid": "^9.0.1"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}
