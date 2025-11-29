@@ -1,6 +1,6 @@
 import { BaseChatMemory, BaseChatMemoryInput } from '@langchain/community/memory/chat_memory';
 import { InputValues, MemoryVariables, OutputValues } from '@langchain/core/memory';
-import { BaseMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
+import { BaseMessage } from '@langchain/core/messages';
 import axios, { AxiosInstance } from 'axios';
 
 export interface GraphitiChatMemoryInput extends BaseChatMemoryInput {
@@ -47,11 +47,15 @@ export class GraphitiChatMemory extends BaseChatMemory {
     private userId: string;
     private contextWindowLength: number;
     private searchLimit: number;
-    private shortTermMemory: BaseMessage[] = [];
-    memoryKey: string;
+    memoryKey = 'chat_history';
 
     constructor(fields: GraphitiChatMemoryInput) {
-        super(fields);
+        super({
+            returnMessages: fields.returnMessages ?? false,
+            inputKey: fields.inputKey,
+            outputKey: fields.outputKey,
+            chatHistory: fields.chatHistory,
+        });
 
         this.userId = fields.userId;
         this.contextWindowLength = fields.contextWindowLength ?? 5;
@@ -78,8 +82,8 @@ export class GraphitiChatMemory extends BaseChatMemory {
      */
     async loadMemoryVariables(values: InputValues): Promise<MemoryVariables> {
         try {
-            const userInput = values.input || values.question || '';
-            let longTermFacts: string[] = [];
+            const userInput = values[this.inputKey || 'input'] || '';
+            const longTermFacts: string[] = [];
 
             // Query Graphiti for relevant long-term facts
             if (userInput && typeof userInput === 'string') {
@@ -96,9 +100,11 @@ export class GraphitiChatMemory extends BaseChatMemory {
                     );
 
                     if (response.data.hits && response.data.hits.length > 0) {
-                        longTermFacts = response.data.hits.map((hit, index) =>
-                            `${index + 1}. ${hit.fact} (confidence: ${hit.score.toFixed(2)})`
-                        );
+                        response.data.hits.forEach((hit, index) => {
+                            longTermFacts.push(
+                                `${index + 1}. ${hit.fact} (confidence: ${hit.score.toFixed(2)})`,
+                            );
+                        });
                     }
                 } catch (error) {
                     console.error('Error querying Graphiti memory:', error);
@@ -106,16 +112,11 @@ export class GraphitiChatMemory extends BaseChatMemory {
                 }
             }
 
-            // Get recent messages from short-term memory
-            const recentMessages = this.shortTermMemory.slice(-this.contextWindowLength);
-            const conversationHistory = recentMessages
-                .map((msg) => {
-                    const role = msg._getType() === 'human' ? 'User' : 'Assistant';
-                    return `${role}: ${msg.content}`;
-                })
-                .join('\n');
+            // Get recent messages from chat history (managed by BaseChatMemory)
+            const messages = await this.chatHistory.getMessages();
+            const recentMessages = messages.slice(-this.contextWindowLength);
 
-            // Format combined memory
+            // Format memory content
             let memoryContent = '';
 
             if (longTermFacts.length > 0) {
@@ -124,8 +125,14 @@ export class GraphitiChatMemory extends BaseChatMemory {
                 memoryContent += '\n\n';
             }
 
-            if (conversationHistory) {
+            if (recentMessages.length > 0) {
                 memoryContent += '=== Recent Conversation ===\n';
+                const conversationHistory = recentMessages
+                    .map((msg: BaseMessage) => {
+                        const role = msg._getType() === 'human' ? 'User' : 'Assistant';
+                        return `${role}: ${msg.content}`;
+                    })
+                    .join('\n');
                 memoryContent += conversationHistory;
             }
 
@@ -146,27 +153,22 @@ export class GraphitiChatMemory extends BaseChatMemory {
      */
     async saveContext(inputValues: InputValues, outputValues: OutputValues): Promise<void> {
         try {
-            const userMessage = new HumanMessage(inputValues.input || inputValues.question || '');
-            const aiMessage = new AIMessage(outputValues.response || outputValues.output || '');
+            // Save to chat history (managed by BaseChatMemory parent class)
+            await super.saveContext(inputValues, outputValues);
 
-            // Add to short-term memory
-            this.shortTermMemory.push(userMessage);
-            this.shortTermMemory.push(aiMessage);
-
-            // Keep short-term memory bounded
-            if (this.shortTermMemory.length > this.contextWindowLength * 3) {
-                this.shortTermMemory = this.shortTermMemory.slice(-this.contextWindowLength * 2);
-            }
+            // Extract messages
+            const userInput = inputValues[this.inputKey || 'input'] || '';
+            const aiResponse = outputValues[this.outputKey || 'output'] || '';
 
             // Save to Graphiti long-term storage
             const timestamp = new Date().toISOString();
 
             // Save user message
-            if (userMessage.content) {
+            if (userInput) {
                 try {
                     const userRequest: GraphitiAppendRequest = {
                         user_id: this.userId,
-                        text: String(userMessage.content),
+                        text: String(userInput),
                         role: 'user',
                         metadata: {
                             source: 'n8n',
@@ -182,11 +184,11 @@ export class GraphitiChatMemory extends BaseChatMemory {
             }
 
             // Save AI message
-            if (aiMessage.content) {
+            if (aiResponse) {
                 try {
                     const aiRequest: GraphitiAppendRequest = {
                         user_id: this.userId,
-                        text: String(aiMessage.content),
+                        text: String(aiResponse),
                         role: 'assistant',
                         metadata: {
                             source: 'n8n',
@@ -207,9 +209,9 @@ export class GraphitiChatMemory extends BaseChatMemory {
     }
 
     /**
-     * Clear short-term memory (long-term memory in Graphiti persists)
+     * Clear all memory (both short-term and long-term)
      */
     async clear(): Promise<void> {
-        this.shortTermMemory = [];
+        await this.chatHistory.clear();
     }
 }
