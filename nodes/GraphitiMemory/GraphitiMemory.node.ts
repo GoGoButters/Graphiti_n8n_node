@@ -42,13 +42,36 @@ export class GraphitiMemory implements INodeType {
         ],
         properties: [
             {
+                displayName: 'Session ID Type',
+                name: 'sessionIdType',
+                type: 'options',
+                options: [
+                    {
+                        name: 'Take From Previous Node Automatically',
+                        value: 'fromInput',
+                        description: 'Use sessionId from the input data',
+                    },
+                    {
+                        name: 'Define Below',
+                        value: 'customKey',
+                        description: 'Use a custom session key expression',
+                    },
+                ],
+                default: 'fromInput',
+                description: 'How to determine the session ID for the user',
+            },
+            {
                 displayName: 'Session Key',
                 name: 'sessionKey',
                 type: 'string',
                 default: '={{ $json.sessionId }}',
                 description:
-                    'Expression to get the session/user ID. Defaults to sessionId from input data. If empty, a UUID will be generated.',
-                required: false,
+                    'The key to use to store session ID. Can be an expression. If empty or not found, a random ID will be generated.',
+                displayOptions: {
+                    show: {
+                        sessionIdType: ['customKey'],
+                    },
+                },
             },
             {
                 displayName: 'Context Window Length',
@@ -60,14 +83,6 @@ export class GraphitiMemory implements INodeType {
                     minValue: 1,
                     maxValue: 50,
                 },
-            },
-            {
-                displayName: 'Memory Key',
-                name: 'memoryKey',
-                type: 'string',
-                default: 'chat_history',
-                description: 'Key name for storing memory in the context',
-                required: false,
             },
             {
                 displayName: 'Search Limit',
@@ -90,27 +105,34 @@ export class GraphitiMemory implements INodeType {
         const apiKey = credentials.apiKey as string;
 
         // Get parameters
-        const sessionKeyExpression = this.getNodeParameter('sessionKey', itemIndex, '') as string;
-        const contextWindowLength = this.getNodeParameter('contextWindowLength', itemIndex, 5) as number;
-        const memoryKey = this.getNodeParameter('memoryKey', itemIndex, 'chat_history') as string;
+        const sessionIdType = this.getNodeParameter('sessionIdType', itemIndex, 'fromInput') as string;
+        const contextWindowLength = this.getNodeParameter(
+            'contextWindowLength',
+            itemIndex,
+            5,
+        ) as number;
         const searchLimit = this.getNodeParameter('searchLimit', itemIndex, 10) as number;
 
-        // Extract session/user ID
-        let userId = sessionKeyExpression;
+        // Determine session ID based on type
+        let sessionId: string;
 
-        // If sessionKey is empty or undefined, generate UUID
-        if (!userId || userId.trim() === '') {
-            userId = uuidv4();
+        if (sessionIdType === 'customKey') {
+            const sessionKey = this.getNodeParameter('sessionKey', itemIndex, '') as string;
+            sessionId = sessionKey || uuidv4();
+        } else {
+            // Try to get from input data
+            const inputData = this.getInputData(itemIndex);
+            sessionId = (inputData[0]?.json?.sessionId as string) || uuidv4();
         }
 
         // Initialize memory instance
         const memory = new GraphitiChatMemory({
             apiUrl,
             apiKey,
-            userId,
+            userId: sessionId,
             contextWindowLength,
             searchLimit,
-            memoryKey,
+            memoryKey: 'chat_history',
         });
 
         return {
