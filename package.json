@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-graphiti",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Graphiti temporal knowledge graph memory for n8n AI agents",
   "keywords": [
     "n8n-community-node-package",

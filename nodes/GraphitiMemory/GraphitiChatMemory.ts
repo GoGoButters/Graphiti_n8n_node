@@ -65,7 +65,7 @@ export class GraphitiChatMemory extends BaseChatMemory {
         // Initialize axios client with timeout and auth headers
         this.apiClient = axios.create({
             baseURL: fields.apiUrl,
-            timeout: 60000, // 60 seconds - Graphiti can be slow with LLM processing
+            timeout: 180000, // 3 minutes - Graphiti can be very slow with complex processing
             headers: {
                 'Content-Type': 'application/json',
                 'X-API-KEY': fields.apiKey,

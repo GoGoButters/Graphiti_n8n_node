@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.10] - 2025-11-30
+
+### Fixed
+- Increased API timeout to 180s (3 minutes) for very slow Graphiti processing
+- Improved error handling for timeout scenarios
+
 ## [1.0.9] - 2025-11-30
 
 ### Fixed
