@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.9] - 2025-11-30
+
+### Fixed
+- Increased API timeout from 10s to 60s to handle slow Graphiti LLM processing
+- Prevents timeout errors during memory save operations
+
 ## [1.0.8] - 2025-11-30
 
 ### Added
