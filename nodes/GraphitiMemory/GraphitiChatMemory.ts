@@ -15,8 +15,8 @@ export interface GraphitiChatMemoryInput extends BaseChatMemoryInput {
 interface GraphitiAppendRequest {
     user_id: string;
     text: string;
-    role: 'user' | 'assistant';
-    metadata?: {
+    metadata: {
+        role: 'user' | 'assistant';
         source: string;
         session_id: string;
         timestamp: string;
@@ -181,8 +181,8 @@ export class GraphitiChatMemory extends BaseChatMemory {
                     const userRequest: GraphitiAppendRequest = {
                         user_id: this.userId,
                         text: String(userInput),
-                        role: 'user',
                         metadata: {
+                            role: 'user',
                             source: 'n8n',
                             session_id: this.userId,
                             timestamp,
@@ -210,8 +210,8 @@ export class GraphitiChatMemory extends BaseChatMemory {
                     const aiRequest: GraphitiAppendRequest = {
                         user_id: this.userId,
                         text: String(aiResponse),
-                        role: 'assistant',
                         metadata: {
+                            role: 'assistant',
                             source: 'n8n',
                             session_id: this.userId,
                             timestamp,
