@@ -1,4 +1,33 @@
 # Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [1.0.8] - 2025-11-30
+
+### Added
+- Comprehensive debug logging for session ID extraction in GraphitiMemory node
+- Support for multiple session ID sources (sessionId, chatSessionId)
+
+### Fixed
+- Improved session ID detection to properly identify user across messages
+
+## [1.0.7] - 2025-11-30
+
+### Fixed
+- **CRITICAL**: Fixed API request structure. Moved `role` field inside `metadata` object to match Graphiti API requirements
+- Validated against working CURL command example
+
+## [1.0.6] - 2025-11-30
+
+### Fixed
+- **CRITICAL**: Added default `inputKey`/`outputKey` values to resolve LangChain saveContext error
+
+## [1.0.5] - 2025-11-30
+
+### Added
+- Comprehensive debug logging in `saveContext` method
+
+### Fixed
 - Removed `as any` type cast to satisfy ESLint rules
 
 ## [1.0.4] - 2025-11-29
