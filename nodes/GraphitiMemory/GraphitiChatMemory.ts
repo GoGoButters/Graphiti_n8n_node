@@ -52,8 +52,8 @@ export class GraphitiChatMemory extends BaseChatMemory {
     constructor(fields: GraphitiChatMemoryInput) {
         super({
             returnMessages: fields.returnMessages ?? false,
-            inputKey: fields.inputKey,
-            outputKey: fields.outputKey,
+            inputKey: fields.inputKey ?? 'input',
+            outputKey: fields.outputKey ?? 'output',
             chatHistory: fields.chatHistory,
         });
 
