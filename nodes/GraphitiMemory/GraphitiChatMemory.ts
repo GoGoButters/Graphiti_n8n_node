@@ -153,21 +153,30 @@ export class GraphitiChatMemory extends BaseChatMemory {
      * Save conversation context to both short-term memory and Graphiti long-term storage
      */
     async saveContext(inputValues: InputValues, outputValues: OutputValues): Promise<void> {
+        console.log('[Graphiti] ======= saveContext CALLED =======');
+        console.log('[Graphiti] inputValues:', JSON.stringify(inputValues, null, 2));
+        console.log('[Graphiti] outputValues:', JSON.stringify(outputValues, null, 2));
+
         try {
             // Save to chat history (managed by BaseChatMemory parent class)
+            console.log('[Graphiti] Calling super.saveContext...');
             await super.saveContext(inputValues, outputValues);
+            console.log('[Graphiti] super.saveContext completed successfully');
 
             // Extract messages
             const userInput = inputValues[this.inputKey || 'input'] || '';
             const aiResponse = outputValues[this.outputKey || 'output'] || '';
 
-            console.log(`[Graphiti] Saving context for user: ${this.userId}`);
+            console.log(`[Graphiti] userId: ${this.userId}`);
+            console.log(`[Graphiti] userInput extracted: "${userInput}"`);
+            console.log(`[Graphiti] aiResponse extracted: "${aiResponse}"`);
 
             // Save to Graphiti long-term storage
             const timestamp = new Date().toISOString();
 
             // Save user message
             if (userInput) {
+                console.log('[Graphiti] User input detected, saving to Graphiti...');
                 try {
                     const userRequest: GraphitiAppendRequest = {
                         user_id: this.userId,
@@ -180,14 +189,23 @@ export class GraphitiChatMemory extends BaseChatMemory {
                         },
                     };
 
-                    await this.apiClient.post('/memory/append', userRequest);
+                    console.log('[Graphiti] Sending user message:', userRequest);
+                    const userApiResponse = await this.apiClient.post('/memory/append', userRequest);
+                    console.log('[Graphiti] ✓ User message saved! Status:', userApiResponse.status);
                 } catch (error) {
-                    console.error('[Graphiti] Error saving user message to Graphiti:', error);
+                    console.error('[Graphiti] ✗ Error saving user message:', error);
+                    if (axios.isAxiosError(error)) {
+                        console.error('[Graphiti] Response data:', error.response?.data);
+                        console.error('[Graphiti] Response status:', error.response?.status);
+                    }
                 }
+            } else {
+                console.log('[Graphiti] No user input to save');
             }
 
             // Save AI message
             if (aiResponse) {
+                console.log('[Graphiti] AI response detected, saving to Graphiti...');
                 try {
                     const aiRequest: GraphitiAppendRequest = {
                         user_id: this.userId,
@@ -200,13 +218,23 @@ export class GraphitiChatMemory extends BaseChatMemory {
                         },
                     };
 
-                    await this.apiClient.post('/memory/append', aiRequest);
+                    console.log('[Graphiti] Sending AI message:', aiRequest);
+                    const aiApiResponse = await this.apiClient.post('/memory/append', aiRequest);
+                    console.log('[Graphiti] ✓ AI message saved! Status:', aiApiResponse.status);
                 } catch (error) {
-                    console.error('[Graphiti] Error saving AI message to Graphiti:', error);
+                    console.error('[Graphiti] ✗ Error saving AI message:', error);
+                    if (axios.isAxiosError(error)) {
+                        console.error('[Graphiti] Response data:', error.response?.data);
+                        console.error('[Graphiti] Response status:', error.response?.status);
+                    }
                 }
+            } else {
+                console.log('[Graphiti] No AI response to save');
             }
+
+            console.log('[Graphiti] ======= saveContext COMPLETED =======');
         } catch (error) {
-            console.error('[Graphiti] Error saving context:', error);
+            console.error('[Graphiti] ✗✗✗ FATAL ERROR in saveContext:', error);
             // Don't throw - allow workflow to continue even if memory save fails
         }
     }
