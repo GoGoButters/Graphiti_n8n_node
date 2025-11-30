@@ -110,33 +110,13 @@ export class GraphitiMemory implements INodeType {
             'contextWindowLength',
             itemIndex,
             5,
-        ) as number;
-        const searchLimit = this.getNodeParameter('searchLimit', itemIndex, 10) as number;
-
-        // Determine session ID based on type
-        let sessionId: string;
-
-        if (sessionIdType === 'customKey') {
-            const sessionKey = this.getNodeParameter('sessionKey', itemIndex, '') as string;
-            sessionId = sessionKey || uuidv4();
-        } else {
-            // Try to get from input data
-            const inputData = this.getInputData(itemIndex);
-            sessionId = (inputData[0]?.json?.sessionId as string) || uuidv4();
-        }
-
-        // Initialize memory instance
-        const memory = new GraphitiChatMemory({
-            apiUrl,
-            apiKey,
-            userId: sessionId,
             contextWindowLength,
             searchLimit,
             memoryKey: 'chat_history',
         });
 
         return {
-            response: memory,
-        };
+    response: memory,
+};
     }
 }
