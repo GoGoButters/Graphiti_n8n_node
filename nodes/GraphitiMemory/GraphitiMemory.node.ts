@@ -110,13 +110,50 @@ export class GraphitiMemory implements INodeType {
             'contextWindowLength',
             itemIndex,
             5,
+        ) as number;
+        const searchLimit = this.getNodeParameter('searchLimit', itemIndex, 10) as number;
+
+        // Determine session ID based on type
+        let sessionId: string;
+
+        // Debug: Log available data
+        console.log('[Graphiti Node] ===== SESSION ID EXTRACTION =====');
+        console.log('[Graphiti Node] sessionIdType:', sessionIdType);
+
+        if (sessionIdType === 'customKey') {
+            const sessionKey = this.getNodeParameter('sessionKey', itemIndex, '') as string;
+            console.log('[Graphiti Node] customKey sessionKey:', sessionKey);
+            sessionId = sessionKey || uuidv4();
+        } else {
+            // Try multiple sources for session ID
+            const inputData = this.getInputData(itemIndex);
+            console.log('[Graphiti Node] inputData:', JSON.stringify(inputData, null, 2));
+
+            // Try to get from various possible locations
+            const fromJsonSessionId = inputData[0]?.json?.sessionId as string;
+            const fromJsonChatSessionId = inputData[0]?.json?.chatSessionId as string;
+
+            console.log('[Graphiti Node] fromJsonSessionId:', fromJsonSessionId);
+            console.log('[Graphiti Node] fromJsonChatSessionId:', fromJsonChatSessionId);
+
+            sessionId = fromJsonSessionId || fromJsonChatSessionId || uuidv4();
+        }
+
+        console.log('[Graphiti Node] FINAL sessionId (userId):', sessionId);
+        console.log('[Graphiti Node] ===============================');
+
+        // Initialize memory instance
+        const memory = new GraphitiChatMemory({
+            apiUrl,
+            apiKey,
+            userId: sessionId,
             contextWindowLength,
             searchLimit,
             memoryKey: 'chat_history',
         });
 
         return {
-    response: memory,
-};
+            response: memory,
+        };
     }
 }
