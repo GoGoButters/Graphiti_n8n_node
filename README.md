@@ -4,29 +4,49 @@
 ![npm version](https://img.shields.io/npm/v/n8n-nodes-graphiti)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-> Graphiti temporal knowledge graph memory integration for n8n AI agents
+> 🧠 **Temporal Knowledge Graph Memory for n8n AI Agents**
 
-This community node integrates [Graphiti](https://github.com/getzep/graphiti) temporal knowledge graph as a powerful memory system for AI agents in n8n. It combines short-term conversation history with long-term fact retrieval, enabling your AI agents to remember and recall information across conversations.
+## ⚠️ Dependencies
 
-## Features
+**This node requires [Graphiti Awesome Memory](https://github.com/GoGoButters/Graphiti_Awesome_Memory) backend to be running.**
 
-✨ **Dual Memory System**
-- 🧠 **Short-term Memory**: Recent conversation context (configurable window)
-- 📚 **Long-term Memory**: Persistent fact storage via Graphiti knowledge graph
-- 🔍 **Semantic Search**: Intelligent retrieval of relevant facts
+Graphiti Awesome Memory is a FastAPI-based adapter that provides REST API endpoints for Graphiti temporal knowledge graph. It handles:
+- User session management
+- Message persistence
+- Semantic fact extraction
+- Episode (conversation history) storage
+- Knowledge graph querying
 
-🔧 **n8n Integration**
-- 🎯 Compatible with n8n AI Agent nodes
-- 🔑 Session-based memory per user
-- ⚙️ Configurable parameters
-- 🛡️ Graceful error handling
+📖 **[Setup Graphiti Awesome Memory Backend →](https://github.com/GoGoButters/Graphiti_Awesome_Memory)**
 
-🚀 **Production Ready**
-- ⏱️ 10-second timeout protection
-- 🔄 Network error resilience
-- 📊 Structured memory formatting for LLMs
+---
 
-## Installation
+## ✨ Features
+
+### 🧠 Dual Memory Architecture
+
+- **Short-term Memory**: Recent conversation episodes from database (persistent across restarts)
+- **Long-term Memory**: Extracted facts stored in temporal knowledge graph
+- **Semantic Search**: Intelligent fact retrieval based on query relevance
+
+### 🔧 n8n Integration
+
+- ✅ AI Agent node compatible
+- ✅ Session-based memory per user
+- ✅ Configurable context windows
+- ✅ Graceful error handling with fallbacks
+- ✅ Comprehensive logging
+
+### 🚀 Production Ready
+
+- ⏱️ 180-second timeout for slow LLM processing
+- 🔄 Network resilience with automatic fallbacks
+- 📊 Structured memory formatting for optimal LLM consumption
+- 🎯 Version **1.0.11** with episodes integration
+
+---
+
+## 📦 Installation
 
 ### Via n8n Community Nodes (Recommended)
 
@@ -43,34 +63,46 @@ This community node integrates [Graphiti](https://github.com/getzep/graphiti) te
 npm install n8n-nodes-graphiti
 ```
 
-## Configuration
+---
 
-### 1. Set up Graphiti Server
+## ⚙️ Configuration
 
-You need a running Graphiti server. See [Graphiti documentation](https://github.com/getzep/graphiti) for setup instructions.
+### 1. Set up Graphiti Awesome Memory Backend
+
+Follow the setup instructions at [Graphiti Awesome Memory](https://github.com/GoGoButters/Graphiti_Awesome_Memory)
+
+**Quick start:**
+```bash
+docker pull gogobutters/graphiti-awesome-memory:latest
+docker run -p 8000:8000 -e API_KEY=your-secret-key gogobutters/graphiti-awesome-memory
+```
 
 ### 2. Configure Credentials in n8n
 
 1. Go to **Credentials** → **New**
-2. Search for "Graphiti API"
+2. Search for **"Graphiti API"**
 3. Fill in:
    - **API URL**: Your Graphiti server URL (e.g., `http://192.168.1.98:8000`)
    - **API Key**: Your authentication key
 4. Test and save
 
-## Usage
+---
+
+## 🎯 Usage
 
 ### Basic AI Agent Workflow
 
 ```
-[When Chat Message Received]
-    ↓
-[Graphiti Memory] ← Load context
-    ↓
-[AI Agent] ← Uses memory as context
-    ↓
-[Graphiti Memory] ← Save conversation
-    ↓
+[Webhook/Chat Trigger]
+       ↓
+[Settings Node] ← Define chatId/userId
+       ↓
+[Graphiti Memory] ← Load context (before agent)
+       ↓
+[AI Agent] ← Uses enriched memory
+       ↓
+[Graphiti Memory] ← Save conversation (after agent)
+       ↓
 [Respond to User]
 ```
 
@@ -78,26 +110,26 @@ You need a running Graphiti server. See [Graphiti documentation](https://github.
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| **Session Key** | `{{ $json.sessionId }}` | Expression to extract user/session ID |
-| **Context Window Length** | `5` | Number of recent messages in short-term memory |
-| **Memory Key** | `chat_history` | Key name for memory in LLM context |
-| **Search Limit** | `10` | Maximum facts retrieved from long-term memory |
+| **Session ID Type** | `fromInput` | How to determine session ID |
+| **Session Key** | `={{ $json.sessionId }}` | Expression to extract user/session ID |
+| **Context Window Length** | `5` | Number of recent episodes to fetch from database |
+| **Search Limit** | `10` | Maximum facts retrieved from knowledge graph |
 
-### Example Workflow
+### How It Works
 
-1. **Add Graphiti Memory Node** before your AI Agent
-   - Set Session Key: `{{ $json.chatId }}` or `{{ $json.userId }}`
-   - Leave other settings as default
+When AI Agent requests memory, the node performs **2 API calls**:
 
-2. **Connect to AI Agent**
-   - Memory will automatically populate the context
+1. **Semantic Search** (`POST /memory/query`)
+   - Searches knowledge graph for relevant facts
+   - Uses current user input as query
+   - Returns top N most relevant facts with confidence scores
 
-3. **Add Graphiti Memory Node** after AI Agent response
-   - To save the conversation to long-term storage
+2. **Episode Retrieval** (`GET /memory/users/{userId}/episodes`)
+   - Fetches last N conversation messages from database
+   - Persistent across n8n restarts
+   - Returns actual user/assistant dialogue
 
 ### Memory Output Format
-
-The memory is formatted for optimal LLM consumption:
 
 ```
 === Relevant Facts from Long-term Memory ===
@@ -111,40 +143,49 @@ Assistant: I'm doing well, thanks for asking!
 User: What's my name?
 ```
 
-## API Reference
+---
 
-### Graphiti Endpoints Used
+## 🔌 API Reference
 
-**POST /memory/append**
+### Graphiti Awesome Memory Endpoints
+
+**POST /memory/append** - Save conversation message
 ```json
 {
-  "user_id": "string",
-  "text": "string",
-  "role": "user" | "assistant",
+  "user_id": "35145416",
+  "text": "User message content",
   "metadata": {
+    "role": "user",
     "source": "n8n",
-    "session_id": "string",
-    "timestamp": "ISO-8601"
+    "session_id": "35145416",
+    "timestamp": "2025-12-01T12:00:00Z"
   }
 }
 ```
 
-**POST /memory/query**
+**POST /memory/query** - Semantic fact search
 ```json
 {
-  "user_id": "string",
-  "query": "string",
+  "user_id": "35145416",
+  "query": "What do I like?",
   "limit": 10
 }
 ```
 
-## Development
+**GET /memory/users/{userId}/episodes** - Retrieve conversation history
+```http
+GET /memory/users/35145416/episodes?limit=5
+```
+
+---
+
+## 🛠️ Development
 
 ### Prerequisites
 
 - Node.js 18+
 - n8n installed locally
-- Graphiti server running
+- Graphiti Awesome Memory backend running
 
 ### Setup
 
@@ -171,55 +212,109 @@ npm link n8n-nodes-graphiti
 - `npm run dev` - Watch mode for development
 - `npm run format` - Format code with Prettier
 - `npm run lint` - Lint code with ESLint
+- `npm run lintfix` - Auto-fix linting issues
 
-## Troubleshooting
+---
+
+## 🐛 Troubleshooting
 
 ### Memory not loading
 
-- ✅ Check Graphiti server is running
+- ✅ Check Graphiti Awesome Memory backend is running
 - ✅ Verify API credentials are correct
-- ✅ Check Session Key expression is valid
-- ✅ Look at n8n execution logs for errors
+- ✅ Check Session Key expression resolves correctly
+- ✅ Look at n8n server logs for detailed error messages
 
-### Connection timeout
+**Server Logs Location:**
+```bash
+# Docker
+docker logs n8n-container --tail 100
 
-- ✅ Ensure Graphiti server is reachable
+# PM2
+pm2 logs n8n
+```
+
+### Connection timeout issues
+
+- ✅ Ensure Graphiti server is reachable from n8n
 - ✅ Check firewall/network settings
-- ✅ Verify API URL doesn't have trailing slash
+- ✅ Verify API URL format (no trailing slash)
+- ✅ Consider increasing timeout if processing is slow
 
-### Session ID issues
+### Session ID not persisted
 
-- ✅ Use expressions like `{{ $json.sessionId }}`
-- ✅ Fallback: Leave empty to auto-generate UUID
-- ✅ Check input data structure
+- ✅ Set **Session ID Type** to `Define Below`
+- ✅ Use expression: `={{ $('Settings').first().json.chatId }}`
+- ✅ Ensure Settings node passes chatId/userId
+- ✅ Check logs for `[Graphiti Node] FINAL sessionId`
 
-## Contributing
+### Episodes endpoint fails
+
+Node automatically falls back to in-memory `chatHistory` if episodes endpoint is unavailable. Check logs:
+```
+[Graphiti] Error fetching episodes: ...
+[Graphiti] Falling back to chatHistory...
+```
+
+---
+
+## 🤝 Contributing
 
 Contributions are welcome! Please:
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## License
-
-MIT © [GoGoButters](https://github.com/GoGoButters)
-
-## Links
-
-- [GitHub Repository](https://github.com/GoGoButters/Graphiti_n8n_node)
-- [npm Package](https://www.npmjs.com/package/n8n-nodes-graphiti)
-- [Graphiti Project](https://github.com/getzep/graphiti)
-- [n8n Community Nodes](https://docs.n8n.io/integrations/community-nodes/)
-
-## Support
-
-- 🐛 [Report Issues](https://github.com/GoGoButters/Graphiti_n8n_node/issues)
-- 💬 [n8n Community Forum](https://community.n8n.io/)
-- 📧 Create an issue on GitHub
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes with tests
+4. Ensure linting passes (`npm run lint`)
+5. Commit changes (`git commit -m 'feat: Add amazing feature'`)
+6. Push to branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
 ---
 
-**Made with ❤️ for the n8n community**
+## 💰 Support the Project
+
+If you find this project valuable, consider supporting its development:
+
+### Cryptocurrency Donations
+
+- **USDT (ERC20)**: `0xd91e775b3636f2be35d85252d8a17550c0f869a6`
+- **Bitcoin (BTC)**: `3Eaa654UHa7GZnKTpYr5Nt2UG5XoUcKXgx`
+- **Ethereum (ETH)**: `0x4dbf76b16b9de343ff17b88963d114f8155a2df0`
+- **Tron (TRX)**: `TT9gPkor4QoR9c12x8HLbvCLeNcS9KDutc`
+
+Your support helps maintain and improve this project! 🙏
+
+---
+
+## 📄 License
+
+MIT © [GoGoButters](https://github.com/GoGoButters)
+
+---
+
+## 🔗 Links
+
+- [GitHub Repository](https://github.com/GoGoButters/Graphiti_n8n_node)
+- [npm Package](https://www.npmjs.com/package/n8n-nodes-graphiti)
+- [Graphiti Awesome Memory Backend](https://github.com/GoGoButters/Graphiti_Awesome_Memory)
+- [Graphiti Project](https://github.com/getzep/graphiti)
+- [n8n Documentation](https://docs.n8n.io/integrations/community-nodes/)
+
+---
+
+## 📞 Support
+
+- 🐛 [Report Issues](https://github.com/GoGoButters/Graphiti_n8n_node/issues)
+- 💬 [n8n Community Forum](https://community.n8n.io/)
+- 📧 Create an issue on GitHub for questions
+
+---
+
+## ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=GoGoButters/Graphiti_n8n_node&type=Date)](https://star-history.com/#GoGoButters/Graphiti_n8n_node&Date)
+
+---
+
+**Made with ❤️ for the n8n and Graphiti communities**
