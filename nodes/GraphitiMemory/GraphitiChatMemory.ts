@@ -42,6 +42,19 @@ interface GraphitiQueryResponse {
     total: number;
 }
 
+interface GraphitiEpisode {
+    id?: string;
+    content: string;
+    role: 'user' | 'assistant';
+    timestamp: string;
+    metadata?: Record<string, unknown>;
+}
+
+interface GraphitiEpisodesResponse {
+    episodes: GraphitiEpisode[];
+    total?: number;
+}
+
 export class GraphitiChatMemory extends BaseChatMemory {
     private apiClient: AxiosInstance;
     private userId: string;
@@ -85,8 +98,9 @@ export class GraphitiChatMemory extends BaseChatMemory {
             const userInput = values[this.inputKey || 'input'] || '';
             console.log(`[Graphiti] Loading memory for user: ${this.userId}, input: ${userInput}`);
             const longTermFacts: string[] = [];
+            const recentEpisodes: GraphitiEpisode[] = [];
 
-            // Query Graphiti for relevant long-term facts
+            // Query Graphiti for relevant long-term facts (semantic search)
             if (userInput && typeof userInput === 'string') {
                 try {
                     const queryRequest: GraphitiQueryRequest = {
@@ -95,6 +109,7 @@ export class GraphitiChatMemory extends BaseChatMemory {
                         limit: this.searchLimit,
                     };
 
+                    console.log('[Graphiti] Querying semantic facts...');
                     const response = await this.apiClient.post<GraphitiQueryResponse>(
                         '/memory/query',
                         queryRequest,
@@ -106,16 +121,48 @@ export class GraphitiChatMemory extends BaseChatMemory {
                                 `${index + 1}. ${hit.fact} (confidence: ${hit.score.toFixed(2)})`,
                             );
                         });
+                        console.log(`[Graphiti] Found ${response.data.hits.length} relevant facts`);
                     }
                 } catch (error) {
-                    console.error('[Graphiti] Error querying Graphiti memory:', error);
+                    console.error('[Graphiti] Error querying semantic facts:', error);
                     // Continue with empty long-term facts on error
                 }
             }
 
-            // Get recent messages from chat history (managed by BaseChatMemory)
-            const messages = await this.chatHistory.getMessages();
-            const recentMessages = messages.slice(-this.contextWindowLength);
+            // Get recent conversation episodes from Graphiti database
+            try {
+                console.log(`[Graphiti] Fetching last ${this.contextWindowLength} episodes...`);
+                const episodesResponse = await this.apiClient.get<GraphitiEpisodesResponse>(
+                    `/memory/users/${this.userId}/episodes`,
+                    {
+                        params: {
+                            limit: this.contextWindowLength,
+                        },
+                    },
+                );
+
+                if (episodesResponse.data.episodes && episodesResponse.data.episodes.length > 0) {
+                    recentEpisodes.push(...episodesResponse.data.episodes);
+                    console.log(`[Graphiti] Found ${recentEpisodes.length} recent episodes`);
+                }
+            } catch (error) {
+                console.error('[Graphiti] Error fetching episodes:', error);
+                // Fallback to in-memory chat history if episodes endpoint fails
+                console.log('[Graphiti] Falling back to chatHistory...');
+                try {
+                    const messages = await this.chatHistory.getMessages();
+                    const recentMessages = messages.slice(-this.contextWindowLength);
+                    recentMessages.forEach((msg: BaseMessage) => {
+                        recentEpisodes.push({
+                            content: String(msg.content),
+                            role: msg._getType() === 'human' ? 'user' : 'assistant',
+                            timestamp: new Date().toISOString(),
+                        });
+                    });
+                } catch (fallbackError) {
+                    console.error('[Graphiti] Fallback to chatHistory also failed:', fallbackError);
+                }
+            }
 
             // Format memory content
             let memoryContent = '';
@@ -126,17 +173,18 @@ export class GraphitiChatMemory extends BaseChatMemory {
                 memoryContent += '\n\n';
             }
 
-            if (recentMessages.length > 0) {
+            if (recentEpisodes.length > 0) {
                 memoryContent += '=== Recent Conversation ===\n';
-                const conversationHistory = recentMessages
-                    .map((msg: BaseMessage) => {
-                        const role = msg._getType() === 'human' ? 'User' : 'Assistant';
-                        return `${role}: ${msg.content}`;
+                const conversationHistory = recentEpisodes
+                    .map((episode) => {
+                        const role = episode.role === 'user' ? 'User' : 'Assistant';
+                        return `${role}: ${episode.content}`;
                     })
                     .join('\n');
                 memoryContent += conversationHistory;
             }
 
+            console.log('[Graphiti] Memory loaded successfully');
             return {
                 [this.memoryKey]: memoryContent || 'No previous conversation history.',
             };

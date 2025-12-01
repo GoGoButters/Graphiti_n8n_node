@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.11] - 2025-12-01
+
+### Added
+- **Episodes integration**: Now fetches conversation history from Graphiti `/memory/users/{user_id}/episodes` endpoint
+- Combines semantic facts search with actual conversation history from database
+- Fallback to in-memory chatHistory if episodes endpoint fails
+
+### Changed
+- `Context Window Length` now controls how many episodes are fetched from Graphiti database
+- More detailed logging for memory loading operations
+
 ## [1.0.10] - 2025-11-30
 
 ### Fixed
