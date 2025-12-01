@@ -206,14 +206,18 @@ export class GraphitiChatMemory extends BaseChatMemory {
         console.log('[Graphiti] outputValues:', JSON.stringify(outputValues, null, 2));
 
         try {
-            // Save to chat history (managed by BaseChatMemory parent class)
-            console.log('[Graphiti] Calling super.saveContext...');
-            await super.saveContext(inputValues, outputValues);
-            console.log('[Graphiti] super.saveContext completed successfully');
-
-            // Extract messages
+            // Extract messages first
             const userInput = inputValues[this.inputKey || 'input'] || '';
             const aiResponse = outputValues[this.outputKey || 'output'] || '';
+
+            // Save to chat history (BaseChatMemory) - ONLY input and output, no metadata
+            // This prevents storing large system_message and formatting_instructions in memory
+            console.log('[Graphiti] Calling super.saveContext with filtered data...');
+            await super.saveContext(
+                { [this.inputKey || 'input']: userInput },
+                { [this.outputKey || 'output']: aiResponse },
+            );
+            console.log('[Graphiti] super.saveContext completed successfully');
 
             console.log(`[Graphiti] userId: ${this.userId}`);
             console.log(`[Graphiti] userInput extracted: "${userInput}"`);
