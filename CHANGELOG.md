@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.12] - 2025-12-01
+
+### Documentation
+- Major README.md update with comprehensive documentation
+- Added dependency information for Graphiti Awesome Memory backend
+- Added donation/support section with cryptocurrency addresses
+- Added star history chart
+- Improved troubleshooting section
+- Updated API reference documentation
+
 ## [1.0.11] - 2025-12-01
 
 ### Added

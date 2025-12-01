@@ -42,7 +42,7 @@ Graphiti Awesome Memory is a FastAPI-based adapter that provides REST API endpoi
 - ⏱️ 180-second timeout for slow LLM processing
 - 🔄 Network resilience with automatic fallbacks
 - 📊 Structured memory formatting for optimal LLM consumption
-- 🎯 Version **1.0.11** with episodes integration
+- 🎯 Version **1.0.12** with comprehensive documentation
 
 ---
 
