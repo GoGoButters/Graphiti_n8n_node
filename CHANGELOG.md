@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.14] - 2025-12-08
+
+### Fixed
+- Added debug logging for `contextWindowLength` and `searchLimit` parameters to help diagnose ignoring settings issue
+
 ## [1.0.13] - 2025-12-01
 
 ### Fixed

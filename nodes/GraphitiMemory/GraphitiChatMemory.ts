@@ -73,7 +73,11 @@ export class GraphitiChatMemory extends BaseChatMemory {
         this.userId = fields.userId;
         this.contextWindowLength = fields.contextWindowLength ?? 5;
         this.searchLimit = fields.searchLimit ?? 10;
+        this.searchLimit = fields.searchLimit ?? 10;
         this.memoryKey = fields.memoryKey ?? 'chat_history';
+
+        console.log(`[Graphiti Memory] Constructor - contextWindowLength: ${this.contextWindowLength} (input: ${fields.contextWindowLength})`);
+        console.log(`[Graphiti Memory] Constructor - searchLimit: ${this.searchLimit} (input: ${fields.searchLimit})`);
 
         // Initialize axios client with timeout and auth headers
         this.apiClient = axios.create({

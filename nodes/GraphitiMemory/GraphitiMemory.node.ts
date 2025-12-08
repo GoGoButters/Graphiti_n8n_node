@@ -113,6 +113,8 @@ export class GraphitiMemory implements INodeType {
         ) as number;
         const searchLimit = this.getNodeParameter('searchLimit', itemIndex, 10) as number;
 
+        console.log(`[Graphiti Node] Params - contextWindowLength: ${contextWindowLength}, searchLimit: ${searchLimit}`);
+
         // Determine session ID based on type
         let sessionId: string;
 
