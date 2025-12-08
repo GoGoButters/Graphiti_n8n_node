@@ -73,7 +73,6 @@ export class GraphitiChatMemory extends BaseChatMemory {
         this.userId = fields.userId;
         this.contextWindowLength = fields.contextWindowLength ?? 5;
         this.searchLimit = fields.searchLimit ?? 10;
-        this.searchLimit = fields.searchLimit ?? 10;
         this.memoryKey = fields.memoryKey ?? 'chat_history';
 
         console.log(`[Graphiti Memory] Constructor - contextWindowLength: ${this.contextWindowLength} (input: ${fields.contextWindowLength})`);
@@ -113,7 +112,8 @@ export class GraphitiChatMemory extends BaseChatMemory {
                         limit: this.searchLimit,
                     };
 
-                    console.log('[Graphiti] Querying semantic facts...');
+
+                    console.log('[Graphiti] Querying semantic facts with payload:', JSON.stringify(queryRequest));
                     const response = await this.apiClient.post<GraphitiQueryResponse>(
                         '/memory/query',
                         queryRequest,
