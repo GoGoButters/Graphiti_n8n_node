@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.16] - 2025-12-08
+
+### Fixed
+- Added `role` field to top-level API request payload (in addition to metadata) to resolve issue where AI messages were incorrectly saved as user messages
+
 ## [1.0.15] - 2025-12-08
 
 ### Fixed

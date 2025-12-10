@@ -21,6 +21,7 @@ interface GraphitiAppendRequest {
         session_id: string;
         timestamp: string;
     };
+    role?: 'user' | 'assistant';
 }
 
 interface GraphitiQueryRequest {
@@ -237,6 +238,7 @@ export class GraphitiChatMemory extends BaseChatMemory {
                     const userRequest: GraphitiAppendRequest = {
                         user_id: this.userId,
                         text: String(userInput),
+                        role: 'user',
                         metadata: {
                             role: 'user',
                             source: 'n8n',
@@ -266,6 +268,7 @@ export class GraphitiChatMemory extends BaseChatMemory {
                     const aiRequest: GraphitiAppendRequest = {
                         user_id: this.userId,
                         text: String(aiResponse),
+                        role: 'assistant',
                         metadata: {
                             role: 'assistant',
                             source: 'n8n',
