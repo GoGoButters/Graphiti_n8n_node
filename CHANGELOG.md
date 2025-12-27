@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.18] - 2025-12-27
+
+### Fixed
+- **Backward Compatibility**: Added fallback to legacy `/memory/query` endpoint if the new `/memory/query/grouped` endpoint returns 404 (useful for older backend versions).
+- **Linting**: Removed unused interfaces to fix build errors.
+- **Documentation**: Corrected "Quick Start" instructions without Docker Hub images.
+
 ## [1.0.17] - 2025-12-27
 
 ### Added
