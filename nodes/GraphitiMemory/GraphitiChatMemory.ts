@@ -43,6 +43,26 @@ interface GraphitiQueryResponse {
     total: number;
 }
 
+// Grouped query response interfaces for source tracking
+interface GraphitiGroupedFact {
+    fact: string;
+    score: number;
+    uuid: string;
+    created_at: string;
+    metadata?: Record<string, unknown>;
+}
+
+interface GraphitiSourceGroup {
+    source_type: 'file' | 'conversation';
+    source_name: string | null;
+    facts: GraphitiGroupedFact[];
+}
+
+interface GraphitiGroupedQueryResponse {
+    groups: GraphitiSourceGroup[];
+    total_facts: number;
+}
+
 interface GraphitiEpisode {
     id?: string;
     content: string;
@@ -101,10 +121,11 @@ export class GraphitiChatMemory extends BaseChatMemory {
         try {
             const userInput = values[this.inputKey || 'input'] || '';
             console.log(`[Graphiti] Loading memory for user: ${this.userId}, input: ${userInput}`);
-            const longTermFacts: string[] = [];
+            let groupedMemoryContent = '';
             const recentEpisodes: GraphitiEpisode[] = [];
 
-            // Query Graphiti for relevant long-term facts (semantic search)
+            // Query Graphiti for relevant long-term facts using GROUPED endpoint
+            // This allows AI agent to understand memory sources (files vs conversation)
             if (userInput && typeof userInput === 'string') {
                 try {
                     const queryRequest: GraphitiQueryRequest = {
@@ -113,23 +134,38 @@ export class GraphitiChatMemory extends BaseChatMemory {
                         limit: this.searchLimit,
                     };
 
-
-                    console.log('[Graphiti] Querying semantic facts with payload:', JSON.stringify(queryRequest));
-                    const response = await this.apiClient.post<GraphitiQueryResponse>(
-                        '/memory/query',
+                    console.log('[Graphiti] Querying GROUPED semantic facts with payload:', JSON.stringify(queryRequest));
+                    const response = await this.apiClient.post<GraphitiGroupedQueryResponse>(
+                        '/memory/query/grouped',
                         queryRequest,
                     );
 
-                    if (response.data.hits && response.data.hits.length > 0) {
-                        response.data.hits.forEach((hit, index) => {
-                            longTermFacts.push(
-                                `${index + 1}. ${hit.fact} (confidence: ${hit.score.toFixed(2)})`,
-                            );
+                    if (response.data.groups && response.data.groups.length > 0) {
+                        // Process file sources first
+                        const fileGroups = response.data.groups.filter(g => g.source_type === 'file');
+                        const conversationGroups = response.data.groups.filter(g => g.source_type === 'conversation');
+
+                        // Format file-based facts
+                        fileGroups.forEach(group => {
+                            const fileName = group.source_name || 'unknown file';
+                            groupedMemoryContent += `\n📄 From file: ${fileName}\n`;
+                            group.facts.forEach((hit, index) => {
+                                groupedMemoryContent += `  ${index + 1}. ${hit.fact} (confidence: ${hit.score.toFixed(2)})\n`;
+                            });
                         });
-                        console.log(`[Graphiti] Found ${response.data.hits.length} relevant facts`);
+
+                        // Format conversation-based facts
+                        conversationGroups.forEach(group => {
+                            groupedMemoryContent += `\n💬 From conversation:\n`;
+                            group.facts.forEach((hit, index) => {
+                                groupedMemoryContent += `  ${index + 1}. ${hit.fact} (confidence: ${hit.score.toFixed(2)})\n`;
+                            });
+                        });
+
+                        console.log(`[Graphiti] Found ${response.data.total_facts} relevant facts in ${response.data.groups.length} groups`);
                     }
                 } catch (error) {
-                    console.error('[Graphiti] Error querying semantic facts:', error);
+                    console.error('[Graphiti] Error querying grouped semantic facts:', error);
                     // Continue with empty long-term facts on error
                 }
             }
@@ -172,10 +208,10 @@ export class GraphitiChatMemory extends BaseChatMemory {
             // Format memory content
             let memoryContent = '';
 
-            if (longTermFacts.length > 0) {
+            if (groupedMemoryContent) {
                 memoryContent += '=== Relevant Facts from Long-term Memory ===\n';
-                memoryContent += longTermFacts.join('\n');
-                memoryContent += '\n\n';
+                memoryContent += groupedMemoryContent;
+                memoryContent += '\n';
             }
 
             if (recentEpisodes.length > 0) {

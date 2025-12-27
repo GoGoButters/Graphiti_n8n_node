@@ -42,7 +42,8 @@ Graphiti Awesome Memory is a FastAPI-based adapter that provides REST API endpoi
 - ⏱️ 180-second timeout for slow LLM processing
 - 🔄 Network resilience with automatic fallbacks
 - 📊 Structured memory formatting for optimal LLM consumption
-- 🎯 Version **1.0.12** with comprehensive documentation
+- 📄 **Memory source tracking** - AI knows if facts come from files or conversation
+- 🎯 Version **1.0.17** with grouped query support
 
 ---
 
@@ -119,10 +120,10 @@ docker run -p 8000:8000 -e API_KEY=your-secret-key gogobutters/graphiti-awesome-
 
 When AI Agent requests memory, the node performs **2 API calls**:
 
-1. **Semantic Search** (`POST /memory/query`)
+1. **Grouped Semantic Search** (`POST /memory/query/grouped`)
    - Searches knowledge graph for relevant facts
-   - Uses current user input as query
-   - Returns top N most relevant facts with confidence scores
+   - Groups results by source (files vs conversation)
+   - Returns facts with source attribution and confidence scores
 
 2. **Episode Retrieval** (`GET /memory/users/{userId}/episodes`)
    - Fetches last N conversation messages from database
@@ -133,15 +134,25 @@ When AI Agent requests memory, the node performs **2 API calls**:
 
 ```
 === Relevant Facts from Long-term Memory ===
-1. User's name is Alice (confidence: 0.95)
-2. Alice is interested in robotics (confidence: 0.89)
-3. Alice is working on a robot arm project (confidence: 0.87)
+
+📄 From file: medical_records.pdf
+  1. Patient has hypertension history (confidence: 0.95)
+  2. Last checkup was in November 2024 (confidence: 0.89)
+
+📄 From file: lab_results.pdf
+  1. Blood pressure: 120/80 (confidence: 0.92)
+
+💬 From conversation:
+  1. User's name is Alice (confidence: 0.95)
+  2. Alice prefers morning appointments (confidence: 0.87)
 
 === Recent Conversation ===
 User: Hi, how are you?
 Assistant: I'm doing well, thanks for asking!
 User: What's my name?
 ```
+
+> **Note**: The 📄 and 💬 icons help AI agents understand and cite where each fact originated.
 
 ---
 
@@ -163,12 +174,31 @@ User: What's my name?
 }
 ```
 
-**POST /memory/query** - Semantic fact search
+**POST /memory/query/grouped** - Grouped semantic fact search
 ```json
 {
   "user_id": "35145416",
   "query": "What do I like?",
   "limit": 10
+}
+```
+
+Response:
+```json
+{
+  "groups": [
+    {
+      "source_type": "file",
+      "source_name": "interests.pdf",
+      "facts": [{"fact": "User likes robotics", "score": 0.95}]
+    },
+    {
+      "source_type": "conversation",
+      "source_name": null,
+      "facts": [{"fact": "User mentioned hiking", "score": 0.85}]
+    }
+  ],
+  "total_facts": 2
 }
 ```
 

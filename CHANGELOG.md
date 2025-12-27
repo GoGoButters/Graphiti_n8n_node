@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.17] - 2025-12-27
+
+### Added
+- **Memory Source Tracking**: Now uses `/memory/query/grouped` endpoint to show where facts originate
+- Facts from files display with 📄 icon and filename (e.g., `📄 From file: report.pdf`)
+- Facts from conversation display with 💬 icon (e.g., `💬 From conversation`)
+- AI agents can now accurately cite memory sources (files vs conversation)
+
+### Changed
+- Switched from `/memory/query` to `/memory/query/grouped` endpoint
+- Updated memory output format to group facts by source type
+
 ## [1.0.16] - 2025-12-08
 
 ### Fixed
