@@ -30,18 +30,9 @@ interface GraphitiQueryRequest {
     limit: number;
 }
 
-interface GraphitiHit {
-    fact: string;
-    score: number;
-    uuid: string;
-    created_at: string;
-    metadata?: Record<string, unknown>;
-}
 
-interface GraphitiQueryResponse {
-    hits: GraphitiHit[];
-    total: number;
-}
+
+
 
 // Grouped query response interfaces for source tracking
 interface GraphitiGroupedFact {
