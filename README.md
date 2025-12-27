@@ -74,9 +74,22 @@ Follow the setup instructions at [Graphiti Awesome Memory](https://github.com/Go
 
 **Quick start:**
 ```bash
-docker pull gogobutters/graphiti-awesome-memory:latest
-docker run -p 8000:8000 -e API_KEY=your-secret-key gogobutters/graphiti-awesome-memory
+# Clone and configure
+git clone https://github.com/GoGoButters/Graphiti_Awesome_Memory.git
+cd Graphiti_Awesome_Memory
+
+# Configure secrets (LLM, Embeddings, Neo4j, etc.)
+nano config.yml
+
+# Generate env files and start Docker containers
+bash scripts/generate_envs.sh
+docker compose up -d --build
 ```
+
+Services will be available at:
+- **Adapter API**: http://localhost:8000/docs
+- **Admin UI**: http://localhost:3000
+- **Neo4j Browser**: http://localhost:7474
 
 ### 2. Configure Credentials in n8n
 
