@@ -115,16 +115,17 @@ export class GraphitiChatMemory extends BaseChatMemory {
             let groupedMemoryContent = '';
             const recentEpisodes: GraphitiEpisode[] = [];
 
-            // Query Graphiti for relevant long-term facts using GROUPED endpoint
-            // This allows AI agent to understand memory sources (files vs conversation)
+            // Query Graphiti for relevant long-term facts
+            // Try GROUPED endpoint first (for source tracking), fallback to legacy endpoint
             if (userInput && typeof userInput === 'string') {
-                try {
-                    const queryRequest: GraphitiQueryRequest = {
-                        user_id: this.userId,
-                        query: userInput,
-                        limit: this.searchLimit,
-                    };
+                const queryRequest: GraphitiQueryRequest = {
+                    user_id: this.userId,
+                    query: userInput,
+                    limit: this.searchLimit,
+                };
 
+                try {
+                    // Try new grouped endpoint first
                     console.log('[Graphiti] Querying GROUPED semantic facts with payload:', JSON.stringify(queryRequest));
                     const response = await this.apiClient.post<GraphitiGroupedQueryResponse>(
                         '/memory/query/grouped',
@@ -156,8 +157,30 @@ export class GraphitiChatMemory extends BaseChatMemory {
                         console.log(`[Graphiti] Found ${response.data.total_facts} relevant facts in ${response.data.groups.length} groups`);
                     }
                 } catch (error) {
-                    console.error('[Graphiti] Error querying grouped semantic facts:', error);
-                    // Continue with empty long-term facts on error
+                    // Check if it's a 404 error - fallback to legacy endpoint
+                    const axiosError = error as { response?: { status?: number } };
+                    if (axiosError.response?.status === 404) {
+                        console.log('[Graphiti] Grouped endpoint not available (404), falling back to legacy /memory/query...');
+                        try {
+                            const legacyResponse = await this.apiClient.post<{ hits?: Array<{ fact: string; score: number; uuid: string; created_at: string }>; total?: number }>(
+                                '/memory/query',
+                                queryRequest,
+                            );
+
+                            if (legacyResponse.data.hits && legacyResponse.data.hits.length > 0) {
+                                groupedMemoryContent += '\n';
+                                legacyResponse.data.hits.forEach((hit, index) => {
+                                    groupedMemoryContent += `${index + 1}. ${hit.fact} (confidence: ${hit.score.toFixed(2)})\n`;
+                                });
+                                console.log(`[Graphiti] Found ${legacyResponse.data.hits.length} relevant facts (legacy endpoint)`);
+                            }
+                        } catch (legacyError) {
+                            console.error('[Graphiti] Error querying legacy semantic facts:', legacyError);
+                        }
+                    } else {
+                        console.error('[Graphiti] Error querying grouped semantic facts:', error);
+                    }
+                    // Continue with whatever facts we have (may be empty)
                 }
             }
 
